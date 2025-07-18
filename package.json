@@ -10,6 +10,9 @@
     "lint": "next lint",
     "postinstall": "prisma generate --schema=./src/lib/schema.prisma"
   },
+  "engines": {
+    "node": "22.x"
+  },
   "prisma": {
     "seed": "ts-node -r tsconfig-paths/register /src/lib/seed.ts"
   },
