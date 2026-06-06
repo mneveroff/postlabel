@@ -1,0 +1,48 @@
+---
+import '../styles/globals.css';
+import TopNav from '../components/nav/TopNav.astro';
+import Footer from '../components/nav/Footer.astro';
+import PostHog from '../components/analytics/PostHog.astro';
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const {
+  title = 'PostLabel - Easy bulk printing of postage labels',
+  description = 'PostLabel is a simple web tool for bulk postage labels printing for Royal Mail, Ebay and ParcelForce.',
+} = Astro.props;
+
+const ogImage = 'https://postlabel.neveroff.dev/landing-image-open-graph-01-compressed.png';
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content={description} />
+    <link rel="icon" href="/favicon.ico" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="PostLabel Example" />
+    <title>{title}</title>
+  </head>
+  <body class="flex min-h-screen flex-col justify-between gap-6 bg-white font-[Inter,sans-serif]">
+    <TopNav />
+    <slot />
+    <Footer />
+    <PostHog />
+    <script defer data-domain="postlabel.neveroff.dev" src="https://plausible.devguild.ltd/js/script.js"></script>
+  </body>
+</html>

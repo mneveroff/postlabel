@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://postlabel.neveroff.dev/sitemap-index.xml

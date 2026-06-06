@@ -1,10 +1,12 @@
 # dependencies
 /node_modules
 
-# next
-.next
+# build
+dist
+.astro
 
 # misc
 .DS_Store
 .editorconfig
 .env
+.vercel
