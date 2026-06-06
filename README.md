@@ -22,6 +22,7 @@ If you want to run PostLabel on your own machine:
 - `pnpm build` — typecheck and build static site
 - `pnpm preview` — preview production build locally
 - `pnpm typecheck` — run Astro type checking
+- `pnpm lint` — run Oxlint on source files
 
 ## Contributing
 
