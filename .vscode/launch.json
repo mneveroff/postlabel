@@ -1,37 +1,17 @@
 {
-    "version": "0.2.0",
-    "configurations": [
-      {
-        "name": "Next.js: debug server-side",
-        "type": "node-terminal",
-        "request": "launch",
-        "command": "npm run dev",
-        "env": {
-          "NEXT_TELEMETRY_DISABLED": "1"
-        },
-      },
-      {
-        "name": "Next.js: debug full stack",
-        "type": "node-terminal",
-        "request": "launch",
-        "command": "npm run dev",
-        "env": {
-          "NEXT_TELEMETRY_DISABLED": "1"
-        },
-        "serverReadyAction": {
-          "pattern": "- Local:.+(https?://.+)",
-          "uriFormat": "%s",
-          "action": "debugWithChrome"
-        }
-      },
-      {
-        "name": "Next.js: debug client-side",
-        "type": "chrome",
-        "request": "launch",
-        "env": {
-          "NEXT_TELEMETRY_DISABLED": "1"
-        },
-        "url": "http://localhost:3000"
-      },
-    ]
-  }
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Astro: dev server",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "pnpm dev"
+    },
+    {
+      "name": "Astro: debug in browser",
+      "type": "chrome",
+      "request": "launch",
+      "url": "http://localhost:4321"
+    }
+  ]
+}
