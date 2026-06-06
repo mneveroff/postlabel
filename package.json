@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "packageManager": "pnpm@9.15.0",
+  "packageManager": "pnpm@11.5.2",
   "scripts": {
     "dev": "astro dev",
     "build": "astro build",
@@ -15,11 +15,11 @@
     "node": "24.x"
   },
   "dependencies": {
-    "@astrojs/react": "^4.2.0",
+    "@astrojs/react": "^5.0.7",
     "@astrojs/sitemap": "^3.3.0",
     "@astrojs/tailwind": "^6.0.2",
-    "@astrojs/vercel": "^8.1.0",
-    "astro": "^5.7.0",
+    "@astrojs/vercel": "^10.0.8",
+    "astro": "^6.4.4",
     "file-saver": "^2.0.5",
     "jspdf": "^4.2.1",
     "pdfjs-dist": "^4.2.67",

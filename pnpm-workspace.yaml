@@ -1,2 +1,11 @@
 packages:
   - .
+
+allowBuilds:
+  core-js: true
+  esbuild: true
+  sharp: true
+
+overrides:
+  yaml-language-server: 1.23.0
+  path-to-regexp: 6.3.0
