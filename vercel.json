@@ -1,7 +1,12 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "astro",
-  "installCommand": "pnpm install",
+  "build": {
+    "env": {
+      "ENABLE_EXPERIMENTAL_COREPACK": "1"
+    }
+  },
+  "installCommand": "corepack enable && corepack prepare pnpm@11.5.2 --activate && pnpm install",
   "buildCommand": "pnpm build",
   "rewrites": [
     {
