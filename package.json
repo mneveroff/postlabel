@@ -21,20 +21,21 @@
     "@astrojs/vercel": "^8.1.0",
     "astro": "^5.7.0",
     "file-saver": "^2.0.5",
-    "jspdf": "^2.5.1",
-    "pdfjs-dist": "^3.11.174",
+    "jspdf": "^4.2.1",
+    "pdfjs-dist": "^4.2.67",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
-    "@astrojs/check": "^0.9.4",
+    "@astrojs/check": "^0.9.9",
     "@types/file-saver": "^2.0.6",
+    "@types/node": "^22.13.14",
     "@types/react": "^18.3.18",
     "@types/react-dom": "^18.3.5",
     "autoprefixer": "^10.4.20",
     "eslint": "^9.22.0",
     "eslint-plugin-astro": "^1.3.1",
-    "postcss": "^8.5.3",
+    "postcss": "^8.5.10",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.8.2"
   }
