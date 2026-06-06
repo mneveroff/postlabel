@@ -76,6 +76,7 @@ export class Label {
 
         this.pdfScale = labelData.pdfScale || 4;
 
+        // PDF text classification, not URL validation — combinedText is extracted label copy.
         if (combinedText.includes('www.royalmail.com') || combinedText.includes('CUSTOMS DECLARATION')) {
             if (combinedText.includes('Print this label and customs document (if applicable)')) {
                 this.name = LabelType.RMInternational;
