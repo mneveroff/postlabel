@@ -181,13 +181,12 @@ function captureWorkflowFailure(
 
 function buildValidationSnapshot(
   files: File[],
-  rejectedFilesCount: number,
   payloadSizeBytes: number
 ): ProcessingSnapshot {
   return {
     filesCount: files.length,
     acceptedFilesCount: 0,
-    rejectedFilesCount,
+    rejectedFilesCount: files.length,
     inputPagesCount: 0,
     payloadSizeBytes,
   };
@@ -215,7 +214,7 @@ export function usePDFHandler() {
     const files = e.target.files ? Array.from(e.target.files) : [];
     const totalSize = files.reduce((total, file) => total + file.size, 0);
 
-    const captureValidationReject = (rejectReason: RejectReason, rejectedFilesCount: number) => {
+    const captureValidationReject = (rejectReason: RejectReason) => {
       captureProductEvent(
         'label_file_rejected',
         buildWorkflowProperties({
@@ -224,7 +223,7 @@ export function usePDFHandler() {
           labels: [],
           operation: 'validate_files',
           outcome: 'rejected',
-          snapshot: buildValidationSnapshot(files, rejectedFilesCount, totalSize),
+          snapshot: buildValidationSnapshot(files, totalSize),
           outputPagesCount: 0,
           rejectReason,
         })
@@ -233,14 +232,14 @@ export function usePDFHandler() {
 
     const nonPdfFiles = files.filter((file) => file.type !== 'application/pdf');
     if (nonPdfFiles.length > 0) {
-      captureValidationReject('non_pdf_file', nonPdfFiles.length);
+      captureValidationReject('non_pdf_file');
       alert('Some files were not uploaded because they are not PDFs.');
       setIsLoading(false);
       return;
     }
 
     if (files.length > 100) {
-      captureValidationReject('too_many_files', files.length);
+      captureValidationReject('too_many_files');
       alert('You cannot upload more than 100 files at once.');
       setIsLoading(false);
       return;
@@ -248,14 +247,14 @@ export function usePDFHandler() {
 
     const largeFiles = files.filter((file) => file.size > 1000000);
     if (largeFiles.length > 0) {
-      captureValidationReject('file_too_large', largeFiles.length);
+      captureValidationReject('file_too_large');
       alert('Some files were not uploaded because they exceed the 1MB size limit.');
       setIsLoading(false);
       return;
     }
 
     if (totalSize > 5000000) {
-      captureValidationReject('payload_too_large', files.length);
+      captureValidationReject('payload_too_large');
       alert('The total size of all files exceeds the 5MB limit.');
       setIsLoading(false);
       return;
@@ -268,7 +267,7 @@ export function usePDFHandler() {
     const payloadSizeBytes = validFiles.reduce((total, file) => total + file.size, 0);
 
     if (validFiles.length === 0) {
-      captureValidationReject('no_valid_files', files.length);
+      captureValidationReject('no_valid_files');
       clearPdfPages();
       setIsLoading(false);
       alert('There were no valid files selected.');

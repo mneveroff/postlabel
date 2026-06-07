@@ -276,7 +276,8 @@ export function captureProductException(
     return;
   }
 
-  const safeError = error instanceof Error ? error : new Error('Non-Error exception');
+  const safeError = new Error('PDF workflow failed');
+  safeError.name = 'PostLabelHandledWorkflowError';
 
   window.posthog.captureException(
     safeError,
