@@ -49,11 +49,7 @@ export default function TldrPage() {
       <p>
         The app is hosted on Vercel (static, stateless) with DNS and reverse proxy managed by
         Cloudflare. Both collect cookieless infrastructure analytics that generalise and anonymise
-        request metadata.
-      </p>
-      <p>
-        There is also Plausible Community Edition, self-hosted in a datacenter in Germany,
-        Frankfurt.
+        request metadata. Product analytics are processed by PostHog Cloud (EU).
       </p>
       <p>
         Go to <a href="/legal/data">Data Processing Agreement</a> for more details.

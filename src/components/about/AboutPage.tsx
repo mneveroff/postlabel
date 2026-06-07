@@ -75,8 +75,8 @@ export default function AboutPage() {
               PostLabel does not store any PII outside of what GDPR and most regulators consider
               &quot;strictly necessary&quot;. PDF processing happens entirely in your browser. We
               collect aggregate product analytics (counts and sizes, never file contents) via
-              PostHog, plus cookieless infrastructure analytics from Cloudflare, Vercel, and
-              self-hosted Plausible. Go to <a href="/legal/tldr">Legal Section</a> for more details.
+              PostHog, plus cookieless infrastructure analytics from Cloudflare and Vercel. Go to{' '}
+              <a href="/legal/tldr">Legal Section</a> for more details.
             </p>
           </ExpandableSection>
 

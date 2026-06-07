@@ -20,8 +20,8 @@ export default function DataPage() {
 
       <h3 className="text-3xl">Third-Party Services</h3>
       <p>
-        The Service utilises cookie-less tracking providers including Cloudflare, Vercel, Plausible,
-        and PostHog for aggregate product and infrastructure analytics.
+        The Service utilises cookie-less tracking providers including Cloudflare, Vercel, and
+        PostHog for aggregate product and infrastructure analytics.
       </p>
       <p>
         For PDF processing, the Service utilises the{' '}
@@ -42,10 +42,6 @@ export default function DataPage() {
         Please refer to the privacy policies of{' '}
         <a href="https://www.cloudflare.com/privacypolicy/" target="_blank" rel="noreferrer">
           Cloudflare
-        </a>
-        ,{' '}
-        <a href="https://plausible.io/data-policy" target="_blank" rel="noreferrer">
-          Plausible
         </a>
         ,{' '}
         <a href="https://vercel.com/legal/privacy-policy" target="_blank" rel="noreferrer">
