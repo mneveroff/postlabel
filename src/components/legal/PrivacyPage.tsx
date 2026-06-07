@@ -17,14 +17,14 @@ export default function PrivacyPage() {
       <p>
         All PDF processing occurs client-side in your browser. No personally identifiable information
         (PII) from your PDFs is sent or stored on our servers. We collect aggregate product analytics
-        via PostHog and cookieless infrastructure analytics from Cloudflare, Vercel, and Plausible,
+        via PostHog and cookieless infrastructure analytics from Cloudflare and Vercel,
         as detailed in our <a href="/legal/data">Data Processing Agreement</a>.
       </p>
 
       <h3 className="text-3xl">Logging and Analytics</h3>
       <p>
-        The Service employs Cloudflare Cookieless Logging, Vercel Cookieless Analytics, Plausible
-        Cookieless Analytics, and PostHog product analytics. PostHog events are triggered during
+        The Service employs Cloudflare Cookieless Logging, Vercel Cookieless Analytics, and PostHog
+        product analytics. PostHog events are triggered during
         Processing, Downloading, and Printing. They contain only aggregate counts (files, pages,
         labels, label types), size buckets, timing, and page context — never filenames, label text,
         addresses, or tracking numbers. PostHog also receives browser error telemetry for debugging,
@@ -50,10 +50,6 @@ export default function PrivacyPage() {
         policies of{' '}
         <a href="https://www.cloudflare.com/privacypolicy/" target="_blank" rel="noreferrer">
           Cloudflare
-        </a>
-        ,{' '}
-        <a href="https://plausible.io/data-policy" target="_blank" rel="noreferrer">
-          Plausible
         </a>
         ,{' '}
         <a href="https://vercel.com/legal/privacy-policy" target="_blank" rel="noreferrer">

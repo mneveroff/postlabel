@@ -46,7 +46,7 @@ const posthogSnippet = posthogKey
     (e.__SV = 1));
 })(document, window.posthog || []);
 posthog.init(${JSON.stringify(posthogKey)}, {
-  api_host: '/ingest',
+  api_host: '/plb',
   ui_host: ${JSON.stringify(posthogUiHost)},
   autocapture: false,
   capture_pageview: true,
