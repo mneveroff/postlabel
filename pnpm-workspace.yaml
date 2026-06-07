@@ -1,3 +1,6 @@
+# 7 days = 60 * 24 * 7 = 10080 minutes
+minReleaseAge: 10080
+
 packages:
   - .
 
