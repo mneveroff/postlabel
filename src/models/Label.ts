@@ -1,4 +1,4 @@
-import type { PDFPageProxy, TextContent } from 'pdfjs-dist';
+import type { PDFPageProxy } from 'pdfjs-dist';
 
 export interface InformedCanvas extends HTMLCanvasElement {
     // Add your custom properties and methods here
@@ -6,6 +6,7 @@ export interface InformedCanvas extends HTMLCanvasElement {
 }
 
 type LabelCoordinates = { x: number; y: number; width: number; height: number };
+type PdfTextContent = Awaited<ReturnType<PDFPageProxy['getTextContent']>>;
 export enum LabelType {
     RM = 'RM',
     RMMobile = 'RM Mobile',
@@ -21,7 +22,7 @@ export interface LabelData {
     name?: LabelType;
     pdfScale?: number;
     coordinates?: LabelCoordinates;
-    content?: TextContent;
+    content?: PdfTextContent;
 }
 
 export class SegmentInformation {

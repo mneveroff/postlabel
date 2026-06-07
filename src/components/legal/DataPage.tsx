@@ -32,9 +32,11 @@ export default function DataPage() {
         client-side without sending PDF data externally.
       </p>
       <p>
-        PostHog receives aggregate product events (counts, sizes, timing) when you process, download,
-        or print labels. It does not receive filenames, label text, addresses, or tracking numbers.
-        PostHog is configured without autocapture, session replay, or user identification.
+        PostHog receives aggregate product events (counts, size buckets, timing) when you process,
+        download, or print labels. It also receives browser error telemetry for debugging, such as
+        stack traces and error metadata. It does not receive filenames, label text, addresses,
+        tracking numbers, or PDF contents. PostHog is configured without autocapture, session replay,
+        or user identification.
       </p>
       <p>
         Please refer to the privacy policies of{' '}

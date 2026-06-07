@@ -36,9 +36,10 @@ export default function TldrPage() {
       </p>
       <p>
         We capture aggregate product analytics via PostHog when labels are processed, downloaded, or
-        printed. These events include counts (files, pages, labels, label types), payload sizes, and
+        printed. These events include counts (files, pages, labels, label types), size buckets, and
         timing — never filenames, label text, addresses, tracking numbers, or PDF contents. PostHog
-        may also receive standard browser transport metadata (such as page path and user agent).
+        may also receive standard browser transport metadata (such as page path and user agent) and
+        browser error telemetry for debugging, such as stack traces and error metadata.
       </p>
       <p>
         Go to <a href="/legal/privacy">Privacy Policy</a> for more details.

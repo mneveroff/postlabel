@@ -8,7 +8,7 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "lint": "oxlint",
+    "lint": "oxlint && tsc --noEmit",
     "lint:fix": "oxlint --fix",
     "typecheck": "astro check"
   },

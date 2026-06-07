@@ -1,11 +1,31 @@
-import { useState, useRef } from 'react';
+import { useRef, useState } from 'react';
 import fileSaver from 'file-saver';
 import { GlobalWorkerOptions, getDocument } from 'pdfjs-dist';
 import { jsPDF } from 'jspdf';
 
-import { Label, SegmentInformation, LabelType } from '@/models/Label';
+import { Label, SegmentInformation } from '@/models/Label';
 import type { InformedCanvas } from '@/models/Label';
-import { captureProductEvent, type LabelProcessingProperties } from '@/utils/analytics';
+import {
+  buildLabelSourceCounts,
+  captureProductEvent,
+  captureProductException,
+  createOperationContext,
+  getDetectedLabelSources,
+  getEmptyLabelSourceCounts,
+  getErrorCode,
+  getErrorType,
+  getLabelSourceCountTotal,
+  getOperationDurationMs,
+  getSizeBucket,
+  getSizeMbRounded,
+  type FailureStage,
+  type OperationContext,
+  type ProductEventName,
+  type ProductEventProperties,
+  type ProductOperation,
+  type ProductOutcome,
+  type RejectReason,
+} from '@/utils/analytics';
 
 const { saveAs } = fileSaver;
 
@@ -21,6 +41,26 @@ const outputLabelHeight = 383.5;
 const outputFormat = 'image/jpeg';
 const outputQuality = 0.8;
 
+type ProcessingSnapshot = {
+  filesCount: number;
+  acceptedFilesCount: number;
+  rejectedFilesCount: number;
+  inputPagesCount: number;
+  payloadSizeBytes: number;
+};
+
+type WorkflowError = Error & {
+  failureStage?: FailureStage;
+};
+
+const emptyProcessingSnapshot: ProcessingSnapshot = {
+  filesCount: 0,
+  acceptedFilesCount: 0,
+  rejectedFilesCount: 0,
+  inputPagesCount: 0,
+  payloadSizeBytes: 0,
+};
+
 function getCurrentDateTimeFormatted(): string {
   const currentDate = new Date();
 
@@ -34,37 +74,122 @@ function getCurrentDateTimeFormatted(): string {
   return `${year}${month}${day}-${hours}${minutes}${seconds}`;
 }
 
-function countLabelTypes(labels: InformedCanvas[]) {
+function toWorkflowError(error: unknown, failureStage: FailureStage): WorkflowError {
+  if (error instanceof Error) {
+    const workflowError = error as WorkflowError;
+    workflowError.failureStage ??= failureStage;
+    return workflowError;
+  }
+
+  const workflowError = new Error('PDF workflow failed') as WorkflowError;
+  workflowError.failureStage = failureStage;
+  return workflowError;
+}
+
+async function runWorkflowStep<T>(
+  failureStage: FailureStage,
+  action: () => Promise<T>
+): Promise<T> {
+  try {
+    return await action();
+  } catch (error) {
+    throw toWorkflowError(error, failureStage);
+  }
+}
+
+function getFailureStage(error: unknown, fallback: FailureStage): FailureStage {
+  if (error instanceof Error && 'failureStage' in error) {
+    return (error as WorkflowError).failureStage ?? fallback;
+  }
+
+  return fallback;
+}
+
+function buildWorkflowProperties({
+  context,
+  durationMs,
+  labels,
+  operation,
+  outcome,
+  snapshot,
+  outputPagesCount,
+  outputSizeBytes,
+  rejectReason,
+  failureStage,
+  error,
+}: {
+  context: OperationContext;
+  durationMs: number;
+  labels: InformedCanvas[];
+  operation: ProductOperation;
+  outcome: ProductOutcome;
+  snapshot: ProcessingSnapshot;
+  outputPagesCount: number;
+  outputSizeBytes?: number;
+  rejectReason?: RejectReason;
+  failureStage?: FailureStage;
+  error?: unknown;
+}): ProductEventProperties {
+  const labelSourceCounts = labels.length
+    ? buildLabelSourceCounts(labels.map((label) => label.labelType))
+    : getEmptyLabelSourceCounts();
+
   return {
-    rm_count: labels.filter(
-      (page) => page.labelType === LabelType.RM || page.labelType === LabelType.RMMobile
-    ).length,
-    rm_international_count: labels.filter(
-      (page) =>
-        page.labelType === LabelType.RMInternational ||
-        page.labelType === LabelType.RMInternationalMobile
-    ).length,
-    ebay_count: labels.filter((page) => page.labelType === LabelType.Ebay).length,
-    parcel_force_count: labels.filter((page) => page.labelType === LabelType.ParcelForce).length,
+    operation,
+    outcome,
+    files_count: snapshot.filesCount,
+    accepted_files_count: snapshot.acceptedFilesCount,
+    rejected_files_count: snapshot.rejectedFilesCount,
+    input_pages_count: snapshot.inputPagesCount,
+    output_pages_count: outputPagesCount,
+    labels_count: labels.length,
+    label_source_counts: labelSourceCounts,
+    label_sources_detected: getDetectedLabelSources(labelSourceCounts),
+    label_source_count_total: getLabelSourceCountTotal(labelSourceCounts),
+    payload_size_bucket: getSizeBucket(snapshot.payloadSizeBytes),
+    payload_size_mb_rounded: getSizeMbRounded(snapshot.payloadSizeBytes),
+    output_size_bucket: outputSizeBytes === undefined ? undefined : getSizeBucket(outputSizeBytes),
+    output_size_mb_rounded:
+      outputSizeBytes === undefined ? undefined : getSizeMbRounded(outputSizeBytes),
+    duration_ms: durationMs,
+    event_id: context.event_id,
+    trace_id: context.trace_id,
+    reject_reason: rejectReason,
+    failure_stage: failureStage,
+    error_type: error === undefined ? undefined : getErrorType(error),
+    error_code: error === undefined ? undefined : getErrorCode(error),
   };
 }
 
-function buildProcessingProperties(
-  labels: InformedCanvas[],
-  filesCount: number,
-  pagesCount: number,
-  payloadSizeBytes: number,
-  durationMs: number,
-  outcome: 'success' | 'failure'
-): LabelProcessingProperties {
+function captureWorkflowFailure(
+  eventName: ProductEventName,
+  properties: ProductEventProperties,
+  error: unknown
+): void {
+  captureProductEvent(eventName, properties);
+  captureProductException(error, {
+    operation: properties.operation,
+    outcome: properties.outcome,
+    event_id: properties.event_id,
+    trace_id: properties.trace_id,
+    duration_ms: properties.duration_ms,
+    failure_stage: properties.failure_stage,
+    error_type: properties.error_type,
+    error_code: properties.error_code,
+  });
+}
+
+function buildValidationSnapshot(
+  files: File[],
+  rejectedFilesCount: number,
+  payloadSizeBytes: number
+): ProcessingSnapshot {
   return {
-    files_count: filesCount,
-    pages_count: pagesCount,
-    labels_count: labels.length,
-    payload_size_bytes: payloadSizeBytes,
-    duration_ms: durationMs,
-    outcome,
-    ...countLabelTypes(labels),
+    filesCount: files.length,
+    acceptedFilesCount: 0,
+    rejectedFilesCount,
+    inputPagesCount: 0,
+    payloadSizeBytes,
   };
 }
 
@@ -73,10 +198,12 @@ export function usePDFHandler() {
   const [pdfPages, setPdfPages] = useState<InformedCanvas[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const lastProcessingSnapshotRef = useRef<ProcessingSnapshot>(emptyProcessingSnapshot);
 
   const clearPdfPages = () => {
     setPdfPages([]);
     setSelectedFiles(null);
+    lastProcessingSnapshotRef.current = emptyProcessingSnapshot;
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -84,17 +211,36 @@ export function usePDFHandler() {
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     setIsLoading(true);
-    const startedAt = performance.now();
+    const context = createOperationContext();
     const files = e.target.files ? Array.from(e.target.files) : [];
+    const totalSize = files.reduce((total, file) => total + file.size, 0);
+
+    const captureValidationReject = (rejectReason: RejectReason, rejectedFilesCount: number) => {
+      captureProductEvent(
+        'label_file_rejected',
+        buildWorkflowProperties({
+          context,
+          durationMs: getOperationDurationMs(context),
+          labels: [],
+          operation: 'validate_files',
+          outcome: 'rejected',
+          snapshot: buildValidationSnapshot(files, rejectedFilesCount, totalSize),
+          outputPagesCount: 0,
+          rejectReason,
+        })
+      );
+    };
 
     const nonPdfFiles = files.filter((file) => file.type !== 'application/pdf');
     if (nonPdfFiles.length > 0) {
+      captureValidationReject('non_pdf_file', nonPdfFiles.length);
       alert('Some files were not uploaded because they are not PDFs.');
       setIsLoading(false);
       return;
     }
 
     if (files.length > 100) {
+      captureValidationReject('too_many_files', files.length);
       alert('You cannot upload more than 100 files at once.');
       setIsLoading(false);
       return;
@@ -102,13 +248,14 @@ export function usePDFHandler() {
 
     const largeFiles = files.filter((file) => file.size > 1000000);
     if (largeFiles.length > 0) {
+      captureValidationReject('file_too_large', largeFiles.length);
       alert('Some files were not uploaded because they exceed the 1MB size limit.');
       setIsLoading(false);
       return;
     }
 
-    const totalSize = files.reduce((total, file) => total + file.size, 0);
     if (totalSize > 5000000) {
+      captureValidationReject('payload_too_large', files.length);
       alert('The total size of all files exceeds the 5MB limit.');
       setIsLoading(false);
       return;
@@ -118,9 +265,10 @@ export function usePDFHandler() {
       (file) => file.type === 'application/pdf' && file.size <= 1000000
     );
 
-    const payloadSize = validFiles.reduce((total, file) => total + file.size, 0);
+    const payloadSizeBytes = validFiles.reduce((total, file) => total + file.size, 0);
 
     if (validFiles.length === 0) {
+      captureValidationReject('no_valid_files', files.length);
       clearPdfPages();
       setIsLoading(false);
       alert('There were no valid files selected.');
@@ -128,57 +276,87 @@ export function usePDFHandler() {
     }
 
     setSelectedFiles(validFiles as unknown as FileList);
+    lastProcessingSnapshotRef.current = {
+      filesCount: files.length,
+      acceptedFilesCount: validFiles.length,
+      rejectedFilesCount: files.length - validFiles.length,
+      inputPagesCount: 0,
+      payloadSizeBytes,
+    };
 
     try {
-      await handleFileProcessing(validFiles as unknown as FileList, payloadSize, startedAt);
-    } catch {
-      captureProductEvent('label_processing_failed', {
-        files_count: validFiles.length,
-        pages_count: 0,
-        labels_count: 0,
-        payload_size_bytes: payloadSize,
-        rm_count: 0,
-        rm_international_count: 0,
-        ebay_count: 0,
-        parcel_force_count: 0,
-        duration_ms: Math.round(performance.now() - startedAt),
-        outcome: 'failure',
-      });
+      await handleFileProcessing(validFiles, payloadSizeBytes, context);
+    } catch (error) {
+      const durationMs = getOperationDurationMs(context);
+      const snapshot = lastProcessingSnapshotRef.current;
+
+      captureWorkflowFailure(
+        'label_processing_failed',
+        buildWorkflowProperties({
+          context,
+          durationMs,
+          labels: [],
+          operation: 'process_labels',
+          outcome: 'failure',
+          snapshot,
+          outputPagesCount: 0,
+          failureStage: getFailureStage(error, 'parse_pdf'),
+          error,
+        }),
+        error
+      );
+    } finally {
       setIsLoading(false);
     }
   };
 
   const handleFileProcessing = async (
-    passedFiles: FileList,
-    payloadSize: number,
-    startedAt: number
+    validFiles: File[],
+    payloadSizeBytes: number,
+    context: OperationContext
   ) => {
     let allPages = 0;
 
-    const validFiles = Array.from(passedFiles || []).filter(
-      (file) => file.type === 'application/pdf' && file.size <= 1000000
-    );
-
     const allLabels = await Promise.all(
-      Array.from(passedFiles || []).map(async (file: File) => {
-        const fileReader = new FileReader();
+      validFiles.map(async (file: File) => {
         const labels: InformedCanvas[] = [];
 
-        fileReader.readAsArrayBuffer(file);
-        const result = await new Promise<ArrayBuffer>((resolve) => {
-          fileReader.onload = () => resolve(fileReader.result as ArrayBuffer);
+        const result = await runWorkflowStep('read_file', async () => {
+          const fileReader = new FileReader();
+
+          return await new Promise<ArrayBuffer>((resolve, reject) => {
+            fileReader.onload = () => resolve(fileReader.result as ArrayBuffer);
+            fileReader.onerror = () => reject(fileReader.error ?? new Error('File read failed'));
+            fileReader.readAsArrayBuffer(file);
+          });
         });
 
-        const pdf = await getDocument({ data: new Uint8Array(result) }).promise;
+        const pdf = await runWorkflowStep(
+          'parse_pdf',
+          async () => await getDocument({ data: new Uint8Array(result) }).promise
+        );
         const numPages = pdf.numPages;
         allPages += numPages;
+        lastProcessingSnapshotRef.current = {
+          ...lastProcessingSnapshotRef.current,
+          inputPagesCount: allPages,
+        };
 
         for (let i = 1; i <= numPages; i++) {
-          const page = await pdf.getPage(i);
-          const content = await page.getTextContent();
+          const page = await runWorkflowStep('parse_pdf', async () => await pdf.getPage(i));
+          const content = await runWorkflowStep(
+            'classify_label',
+            async () => await page.getTextContent()
+          );
 
-          const label = new Label({ content });
-          const newPages = await label.getPages(document, page);
+          const label = await runWorkflowStep(
+            'classify_label',
+            async () => new Label({ content })
+          );
+          const newPages = await runWorkflowStep(
+            'render_label',
+            async () => await label.getPages(document, page)
+          );
 
           for (const newPage of newPages.pages) {
             labels.push(newPage);
@@ -190,21 +368,29 @@ export function usePDFHandler() {
     );
 
     const flatLabels = allLabels.flat();
+    const snapshot: ProcessingSnapshot = {
+      filesCount: validFiles.length,
+      acceptedFilesCount: validFiles.length,
+      rejectedFilesCount: 0,
+      inputPagesCount: allPages,
+      payloadSizeBytes,
+    };
 
     captureProductEvent(
       'label_processing_completed',
-      buildProcessingProperties(
-        flatLabels,
-        validFiles.length,
-        allPages,
-        payloadSize,
-        Math.round(performance.now() - startedAt),
-        'success'
-      )
+      buildWorkflowProperties({
+        context,
+        durationMs: getOperationDurationMs(context),
+        labels: flatLabels,
+        operation: 'process_labels',
+        outcome: 'success',
+        snapshot,
+        outputPagesCount: flatLabels.length,
+      })
     );
 
+    lastProcessingSnapshotRef.current = snapshot;
     setPdfPages(flatLabels);
-    setIsLoading(false);
   };
 
   async function preparePDF(labels: InformedCanvas[], hasMargin: boolean) {
@@ -293,52 +479,105 @@ export function usePDFHandler() {
   }
 
   const handleFilePrinting = async (hasMargin: boolean) => {
-    const startedAt = performance.now();
-    const { blob, pagesCount } = await preparePDF(pdfPages, hasMargin);
+    const context = createOperationContext();
+    const snapshot = lastProcessingSnapshotRef.current;
+    let failureStage: FailureStage = 'compose_pdf';
 
-    captureProductEvent(
-      'label_pdf_printed',
-      buildProcessingProperties(
-        pdfPages,
-        1,
-        pagesCount,
-        blob.size,
-        Math.round(performance.now() - startedAt),
-        'success'
-      )
-    );
+    try {
+      const { blob, pagesCount } = await runWorkflowStep(
+        'compose_pdf',
+        async () => await preparePDF(pdfPages, hasMargin)
+      );
+      const blobURL = URL.createObjectURL(blob);
 
-    const blobURL = URL.createObjectURL(blob);
+      failureStage = 'print_pdf';
+      const iframe = document.createElement('iframe');
+      iframe.style.display = 'none';
+      document.body.appendChild(iframe);
+      iframe.src = blobURL;
 
-    const iframe = document.createElement('iframe');
-    iframe.style.display = 'none';
-    document.body.appendChild(iframe);
-    iframe.src = blobURL;
+      iframe.onload = function () {
+        setTimeout(function () {
+          iframe.contentWindow?.print();
+        }, 1);
+      };
 
-    iframe.onload = function () {
-      setTimeout(function () {
-        iframe.contentWindow?.print();
-      }, 1);
-    };
+      captureProductEvent(
+        'label_pdf_printed',
+        buildWorkflowProperties({
+          context,
+          durationMs: getOperationDurationMs(context),
+          labels: pdfPages,
+          operation: 'print_pdf',
+          outcome: 'success',
+          snapshot,
+          outputPagesCount: pagesCount,
+          outputSizeBytes: blob.size,
+        })
+      );
+    } catch (error) {
+      captureWorkflowFailure(
+        'label_pdf_print_failed',
+        buildWorkflowProperties({
+          context,
+          durationMs: getOperationDurationMs(context),
+          labels: pdfPages,
+          operation: 'print_pdf',
+          outcome: 'failure',
+          snapshot,
+          outputPagesCount: 0,
+          failureStage: getFailureStage(error, failureStage),
+          error,
+        }),
+        error
+      );
+    }
   };
 
   const handleFileDownload = async (hasMargin: boolean) => {
-    const startedAt = performance.now();
-    const { blob, pagesCount } = await preparePDF(pdfPages, hasMargin);
+    const context = createOperationContext();
+    const snapshot = lastProcessingSnapshotRef.current;
+    let failureStage: FailureStage = 'compose_pdf';
 
-    captureProductEvent(
-      'label_pdf_downloaded',
-      buildProcessingProperties(
-        pdfPages,
-        1,
-        pagesCount,
-        blob.size,
-        Math.round(performance.now() - startedAt),
-        'success'
-      )
-    );
+    try {
+      const { blob, pagesCount } = await runWorkflowStep(
+        'compose_pdf',
+        async () => await preparePDF(pdfPages, hasMargin)
+      );
 
-    saveAs(blob, `PostLabel - ${getCurrentDateTimeFormatted()}.pdf`);
+      failureStage = 'download_pdf';
+      saveAs(blob, `PostLabel - ${getCurrentDateTimeFormatted()}.pdf`);
+
+      captureProductEvent(
+        'label_pdf_downloaded',
+        buildWorkflowProperties({
+          context,
+          durationMs: getOperationDurationMs(context),
+          labels: pdfPages,
+          operation: 'download_pdf',
+          outcome: 'success',
+          snapshot,
+          outputPagesCount: pagesCount,
+          outputSizeBytes: blob.size,
+        })
+      );
+    } catch (error) {
+      captureWorkflowFailure(
+        'label_pdf_download_failed',
+        buildWorkflowProperties({
+          context,
+          durationMs: getOperationDurationMs(context),
+          labels: pdfPages,
+          operation: 'download_pdf',
+          outcome: 'failure',
+          snapshot,
+          outputPagesCount: 0,
+          failureStage: getFailureStage(error, failureStage),
+          error,
+        }),
+        error
+      );
+    }
   };
 
   return {

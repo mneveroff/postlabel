@@ -4,7 +4,7 @@ PostLabel is a small static web tool that lets you convert Royal Mail, ParcelFor
 
 🖨️ See it live and print some labels: [PostLabel](https://postlabel.neveroff.dev/)
 
-The live site does not collect or store PDF contents. Aggregate product analytics (counts and sizes only) may be collected via PostHog.
+The live site does not collect or store PDF contents. Aggregate product analytics and browser error telemetry may be collected via PostHog without filenames, label text, addresses, tracking numbers, or PDF contents.
 
 ## Getting Started
 
@@ -16,13 +16,21 @@ If you want to run PostLabel on your own machine:
 4. Optionally copy `.env.example` to `.env` and set `PUBLIC_POSTHOG_KEY` for analytics (events are proxied via `/ingest` on your domain).
 5. Run `pnpm dev` to start the development server.
 
+## Environment Variables
+
+Only `PUBLIC_` variables are exposed to the browser. Do not put private PostHog API keys in these values.
+
+- `PUBLIC_POSTHOG_KEY` — optional publishable PostHog browser key.
+- `PUBLIC_POSTHOG_UI_HOST` — optional PostHog app host for UI links, defaults to `https://eu.posthog.com`.
+- `PUBLIC_APP_ENVIRONMENT`, `PUBLIC_APP_VERSION`, `PUBLIC_DEPLOY_PROVIDER`, `PUBLIC_VERCEL_GIT_COMMIT_SHA` — optional non-sensitive build metadata attached to analytics events.
+
 ## Scripts
 
 - `pnpm dev` — start Astro dev server
-- `pnpm build` — typecheck and build static site
+- `pnpm build` — build static site
 - `pnpm preview` — preview production build locally
 - `pnpm typecheck` — run Astro type checking
-- `pnpm lint` — run Oxlint on source files
+- `pnpm lint` — run Oxlint and `tsc --noEmit`
 
 ## Contributing
 
