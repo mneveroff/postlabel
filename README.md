@@ -13,7 +13,7 @@ If you want to run PostLabel on your own machine:
 1. Clone the repository.
 2. Install [pnpm](https://pnpm.io/) if needed.
 3. Run `pnpm install` from the root directory.
-4. Optionally copy `.env.example` to `.env` and set `PUBLIC_POSTHOG_KEY` for analytics (events are proxied via `/ingest` on your domain).
+4. Optionally copy `.env.example` to `.env` and set `PUBLIC_POSTHOG_KEY` for analytics (events are proxied via `/plb` on your domain).
 5. Run `pnpm dev` to start the development server.
 
 ## Environment Variables

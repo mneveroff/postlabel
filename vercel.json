@@ -10,15 +10,15 @@
   "buildCommand": "pnpm build",
   "rewrites": [
     {
-      "source": "/ingest/static/:path(.*)",
+      "source": "/plb/static/:path(.*)",
       "destination": "https://eu-assets.i.posthog.com/static/:path"
     },
     {
-      "source": "/ingest/array/:path(.*)",
+      "source": "/plb/array/:path(.*)",
       "destination": "https://eu-assets.i.posthog.com/array/:path"
     },
     {
-      "source": "/ingest/:path(.*)",
+      "source": "/plb/:path(.*)",
       "destination": "https://eu.i.posthog.com/:path"
     }
   ]

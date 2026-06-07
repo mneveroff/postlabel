@@ -15,20 +15,20 @@ export default defineConfig({
   vite: {
     server: {
       proxy: {
-        '/ingest/static': {
+        '/plb/static': {
           target: posthogAssetHost,
           changeOrigin: true,
-          rewrite: (path) => path.replace(/^\/ingest/, ''),
+          rewrite: (path) => path.replace(/^\/plb/, ''),
         },
-        '/ingest/array': {
+        '/plb/array': {
           target: posthogAssetHost,
           changeOrigin: true,
-          rewrite: (path) => path.replace(/^\/ingest/, ''),
+          rewrite: (path) => path.replace(/^\/plb/, ''),
         },
-        '/ingest': {
+        '/plb': {
           target: posthogApiHost,
           changeOrigin: true,
-          rewrite: (path) => path.replace(/^\/ingest/, ''),
+          rewrite: (path) => path.replace(/^\/plb/, ''),
         },
       },
     },
