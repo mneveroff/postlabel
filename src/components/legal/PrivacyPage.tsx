@@ -26,7 +26,9 @@ export default function PrivacyPage() {
         The Service employs Cloudflare Cookieless Logging, Vercel Cookieless Analytics, Plausible
         Cookieless Analytics, and PostHog product analytics. PostHog events are triggered during
         Processing, Downloading, and Printing. They contain only aggregate counts (files, pages,
-        labels, label types), payload sizes, timing, and page context — never filenames, label text,
+        labels, label types), size buckets, timing, and page context — never filenames, label text,
+        addresses, or tracking numbers. PostHog also receives browser error telemetry for debugging,
+        such as stack traces and error metadata, without PDF contents, filenames, label text,
         addresses, or tracking numbers. PostHog is configured without autocapture or session replay.
       </p>
 
